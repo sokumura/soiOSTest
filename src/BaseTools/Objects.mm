@@ -16,16 +16,19 @@ void BoundingBox::setup(vector<string> const& _texts,
                         string const& _name,
                         float const& X, float const& Y,
                         float const& W, float const& H,
-                        string const& folderPass){
+                        string const& folderPass,
+                        bool defaultExistance){
     
     counter = 0;
+    
+    derayTimer = StopWatch("derayTimer");
     
     objType = BOUNDING_BOX;
     ofRectangle::set(X, Y, W, H);
     this->name = _name;
     texts = _texts;
-    num = texts.size();
-    opening = exopening = false;
+    choiceNum = texts.size();
+    opening = false;
     normalHeight = H;
     
     normalImg.allocate(W, H, OF_IMAGE_COLOR_ALPHA);
@@ -41,19 +44,21 @@ void BoundingBox::setup(vector<string> const& _texts,
     status = targetMask.loadImage(folderPass + "/targetMask.png");
     CheckBool(status, "BoundingBox::setup() targetMask.loadIage");
     
-    targetNo = 0;
+    choiceTargetNo = 0;
     
-    status = fonts.loadFont("G-OTF-GShinGoPro-Medium.otf", 18);
+    status = fonts.loadFont("G-OTF-GShinGoPro-Medium.otf", 14);
     CheckBool(status, "BoundingBox::setup() fonts.loadFont");
+    bDefaultExist = defaultExistance;
     bDraw = true;
     bSet = true;
 }
 //----------------------------------------------
 void BoundingBox::subUpdate(){
-    cout << "BoundingBox::subUpdate() opening is " << soToString(opening) << endl;
-    if (exopening != opening) {
-        exopening = opening;
-        cout << "opening が" << opening << " に変更された!!!" << endl;
+    if (derayTimer.isMoving()) {
+        if (derayTimer.getTime(false) > DERAY) {
+            close();
+            derayTimer.off();
+        }
     }
 }
 //----------------------------------------------
@@ -65,28 +70,31 @@ void BoundingBox::subDraw(){
     float marginX = 10.0f;
     float marginY = 22.0f;
     ofPoint axis = ofPoint(this->x, this->y);
+    //opening = true;
     if (opening) {
-        cout << "openning draw is called" << endl;
         ofSetColor(255);
         activeImg.draw(axis.x, axis.y);
         fonts.drawString(texts[0], axis.x + marginX, axis.y + marginY);
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < choiceNum; i++) {
             ofPoint drawPos = ofPoint(axis.x, axis.y + normalHeight * (i + 1));
+            ofSetColor(255, 255, 255, 100);
+            ofLine(drawPos.x, drawPos.y, drawPos.x + width - 30.0f, drawPos.y);
+            
             ofSetColor(255);
             activeBg.draw(drawPos);
             ofSetColor(0, 0, 0, 255);
             fonts.drawString(texts[i], drawPos.x + marginX, drawPos.y + marginY);
-            if (targetNo != i + 1) {
-                ofSetColor(255, 255, 255, 100);
-                targetMask.draw(drawPos.x, targetNo * normalHeight);
-            }
         }
-        
+        //if (choiceTargetNo != 0) {
+            ofSetColor(255, 255, 255, 255);
+            targetMask.draw(axis.x, axis.y + choiceTargetNo * normalHeight);
+        //}
+    
     } else {
         ofSetColor(255, 255, 255, 255);
         normalImg.draw(axis.x, axis.y);
         ofSetColor(0, 0, 0, 255);
-        fonts.drawString(texts[targetNo], axis.x + marginX, axis.y + marginY);
+        fonts.drawString(texts[choiceTargetNo], axis.x + marginX, axis.y + marginY);
     }
     ofPopStyle();
 }
@@ -99,37 +107,54 @@ void BoundingBox::action(ActionType const& action, ofPoint const& touchPos){
 }
 //----------------------------------------------
 void BoundingBox::tapped(ofPoint const& touchPos){
-    cout << "BoundingBox::tapped()" << endl;
-    cout <<"opening : " << soToString(opening) << endl;
+//    cout << "BoundingBox::tapped()" << endl;
+//    cout <<"opening : " << soToString(opening) << endl;
     if (opening) {
-        setTarget(touchPos);
-    } else {
-        open();
+        setChoiceTarget(touchPos);
+        derayTimer.on();
     }
 }
 //----------------------------------------------
 void BoundingBox::inTouchDown(ofPoint const& touchPos){
-
+    if (!opening) open();
 }
 //----------------------------------------------
 void BoundingBox::inTouchMoved(ofPoint const& touchPos){
-
+    cout << "inTouchMoved called" << endl;
+    if (opening) {
+        setChoiceTarget(touchPos);
+    }
 }
 //----------------------------------------------
 void BoundingBox::inTouchUp(ofPoint const& touchPos){
-
+    if (opening && choiceTargetNo != 0) {
+        setChoiceTarget(touchPos);
+        derayTimer.on();
+    }
 }
 //----------------------------------------------
 void BoundingBox::touchOut(){
-    close();
+    
 }
 //----------------------------------------------
-void BoundingBox::setTarget(ofPoint const& touchPoint){
+void BoundingBox::setChoiceTarget(ofPoint const& touchPoint){
     float localY = touchPoint.y - this->y;
-    unsigned int target = floor(localY / normalHeight);
-    targetNo = target;
-    cout << name << " target が " << targetNo << " に変更された。" << endl;
-    close();
+    unsigned int target = floor(localY / normalHeight) + 1;
+    choiceTargetNo = target;
+    cout << name << " target が " << choiceTargetNo << " に変更された。" << endl;
+    //close();
+}
+//----------------------------------------------
+void BoundingBox::print(){
+    cout << "BoundingBox::print()\nchoiceNum : " << choiceNum <<
+    "\nname : " << name <<
+    "\nobjType : " << getObjTypeString(objType) <<
+    "\nchoiceTargetNo : " << choiceTargetNo << endl;
+    for (int i = 0; i < texts.size(); i++) {
+        cout << texts[i] << endl;
+    }
+    cout << "openning : " << soToString(opening) <<
+    "\n//BoundingBox::print()" <<endl;
 }
 ///////////////////////////////////////
 //////BoundingBox////private///////////
@@ -138,11 +163,12 @@ void BoundingBox::setTarget(ofPoint const& touchPoint){
 void BoundingBox::open(){
     cout << "BoundingBox::open()" << endl;
     opening = true;
-    height = num * normalHeight;
+    height = choiceNum * normalHeight;
     cout << "opening : " << soToString(opening) << endl;
 }
 //----------------------------------------------
 void BoundingBox::close(){
+    cout << "close() が呼ばれた" << endl;
     opening = false;
     height = normalHeight;
 }

@@ -97,36 +97,21 @@ private:
     void doubleTapped(ofPoint const& pos);
     void resetTouchAction();
     
-    //void sendEvents(ofxSOiOSEvents & e);
-    //void enableTouchEvents();
-    //void disableTouchEvents();
-    
     void touchEventGenerate();
     
-    //void toggleOfTouchEvent(bool beActiveEvent);
-    void limitPagePos() {
-        pagePos.y = MAX(pagePos.y, ofGetHeight() - pageHeight);
-        pagePos.y = MIN(pagePos.y, 0.0f);
-        cout << "limitPagePos() was called pagePos x:" << pagePos.x << ", y:" << pagePos.y << endl;
-    }
     void sliderUpdate();
     void scrollUpadte();
     
-    ofPoint convertToPagePos(ofPoint const& devicePos){
+    void setTouchingTarget(int const& index);
+    
+    inline ofPoint convertToPagePos(ofPoint const& devicePos){
         ofPoint ansPos = ofPoint();
         ansPos = devicePos - pagePos;
         return ansPos;
     }
-    
-    void setTouchTarget(int const& index){
-        if (touchingTarget != 0 && touchingTarget != index) {
-            buttons[touchingTarget]->touchOut();
-        }
-        touchingTarget = index;
-        if (touchingTarget != 0) {
-            cout << "touchingTagert was changed to -" << touchingTarget << "-" << "\n targetButton name is " << buttons[touchingTarget]->getName() << endl;
-        }
-        
+    inline void limitPagePos() {
+        pagePos.y = MAX(pagePos.y, ofGetHeight() - pageHeight);
+        pagePos.y = MIN(pagePos.y, 0.0f);
     }
     
     int counter;

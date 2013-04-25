@@ -34,6 +34,7 @@ void ofxSOInteractivePage::setup(string const& _name, bool slidable, bool _bScro
     bSet = true;
     
 }
+//--------------------------------------------------------------
 void ofxSOInteractivePage::sliderSetup(AnimCurve const& inCurveMode, AnimCurve const& outCurveMode){
     fAnimSlideIn.setCurve(inCurveMode);
     fAnimSlideOut.setCurve(outCurveMode);
@@ -92,6 +93,15 @@ void ofxSOInteractivePage::touchEventGenerate(){
         }
     } else resetTouchAction();//
 }
+void ofxSOInteractivePage::setTouchingTarget(int const& index){
+    if (touchingTarget != 0 && touchingTarget != index) {
+        buttons[touchingTarget]->touchOut();
+    }
+    touchingTarget = index;
+    if (touchingTarget != 0) {
+        cout << "touchingTagert was changed to -" << touchingTarget << "-" << "\n targetButton name is " << buttons[touchingTarget]->getName() << endl;
+    }
+}
 //--------------------------------------------------------------
 void ofxSOInteractivePage::update(){
     //if (counter % 1000 == 0) cout << "page.update() is called" << endl;
@@ -119,10 +129,10 @@ void ofxSOInteractivePage::draw(){
     ofPushMatrix();
     ofTranslate(pagePos.x, pagePos.y);
     subDraw();
+    ofEnableAlphaBlending();
     for (int i = buttons.size() - 1; i > 0; i--) {
         buttons[i]->draw();
     }
-    ofEnableAlphaBlending();
     ofSetColor(255, 0, 0, 100);
     ofCircle(touchPoint.x, touchPoint.y, 10.0f);
     ofPopMatrix();
@@ -132,7 +142,7 @@ void ofxSOInteractivePage::resetTouchAction(){/*パラメータの初期化*/
     startTime = 0;
     downCount = moveCount = upCount = 0;
     bDowning = false;
-    setTouchTarget(0);
+    setTouchingTarget(0);//? これがBoundingBox不具合の原因
     touchPoint = exTouchPoint = ofPoint(0,0);
 }
 
@@ -154,11 +164,12 @@ void ofxSOInteractivePage::touchDown(ofTouchEventArgs & touch){
     for (int i = buttons.size() - 1; i > 0; i--) {//ボタンを捜査
         bool status = buttons[i]->inside(touchPoint);
         if (status) {
-            setTouchTarget(i);
+            setTouchingTarget(i);
             buttons[touchingTarget]->inTouchDown(touchPoint);
         }
     }
     
+    //scroll
     if (touchingTarget == 0 && bSlidable) bScrolling = true;
     else bScrolling = false;
     
@@ -180,16 +191,16 @@ void ofxSOInteractivePage::touchMoved(ofTouchEventArgs & touch){
                 targetPagePos.y += 2.0f;
             }
         }
-    }
-    moveCount++;
-    
-    if (touchingTarget != 0) {
-        buttons[touchingTarget]->inTouchMoved(touchPoint);
-        if (!buttons[touchingTarget]->isInside(touchPoint.x, touchPoint.y)) {//ターゲットが存在して、そのターゲットを離れたとき
-            buttons[touchingTarget]->touchOut();
+    }else{
+        if (touchingTarget != 0) {
+            bool status = buttons[touchingTarget]->inside(touchPoint);
+            if (status) {
+                buttons[touchingTarget]->inTouchMoved(touchPoint);
+            } else buttons[touchingTarget]->touchOut();
         }
     }
     exTouchPoint = touchPoint;
+    moveCount++;
 }
 
 //--------------------------------------------------------------
@@ -201,8 +212,10 @@ void ofxSOInteractivePage::touchUp(ofTouchEventArgs & touch){
         upCount++;
     else
         downCount = moveCount = upCount = 0;
-    if (touchingTarget != 0) {
-        buttons[touchingTarget]->inTouchUp(touchPoint);
+    if (bScrolling) {
+        if (buttons[touchingTarget]->isInside(touchPoint.x, touchPoint.y)) {
+            buttons[touchingTarget]->inTouchUp(touchPoint);
+        }
     }
     touchPoint = ofPoint(0, 0);
 }
@@ -212,9 +225,8 @@ void ofxSOInteractivePage::touchUp(ofTouchEventArgs & touch){
 void ofxSOInteractivePage::tapped(ofPoint const& pos){
     //cout << name << " ofxSOInteractivePage::tapped()" << endl;
     if (touchingTarget != 0) {
-        //cout << "buttons[ " << touchingTarget << " ]にTAPPED, touchPoint : " << touchPoint.x << ", " << touchPoint.y << "を送った" << endl;
         buttons[touchingTarget]->action(TAPPED, touchPoint);
-    } else ;//cout << "no object" << endl;
+    };//cout << "no object" << endl;
     resetTouchAction();
 }
 //--------------------------------------------------------------
@@ -235,28 +247,3 @@ void ofxSOInteractivePage::doubleTapped(ofPoint const& pos){
     } else cout << "no object" << endl;
     resetTouchAction();
 }
-//--------------------------------------------------------------
-//--------------------------------------------------------------
-//void ofxSOInteractivePage::toggleOfTouchEvent(bool beActiveEvent){
-//    bEnableTouch = beActiveEvent;
-//    if (bEnableTouch) {
-//        enableTouchEvents();
-//    } else {
-//        disableTouchEvents();
-//    }
-//}
-////--------------------------------------------------------------
-//void ofxSOInteractivePage::enableTouchEvents(){
-//    ofAddListener(ofEvents().touchDown, this, &ofxSOInteractivePage::_touchDown);
-//    ofAddListener(ofEvents().touchMoved, this, &ofxSOInteractivePage::_touchMoved);
-//    ofAddListener(ofEvents().touchUp, this, &ofxSOInteractivePage::_touchUp);
-//    bEnableTouch = true;
-//}
-////--------------------------------------------------------------
-//void ofxSOInteractivePage::disableTouchEvents(){
-//    ofRemoveListener(ofEvents().touchDown, this, &ofxSOInteractivePage::_touchDown);
-//    ofRemoveListener(ofEvents().touchMoved, this, &ofxSOInteractivePage::_touchMoved);
-//    ofRemoveListener(ofEvents().touchUp, this, &ofxSOInteractivePage::_touchUp);
-//    bEnableTouch = false;
-//}
-//--------------------------------------------------------------

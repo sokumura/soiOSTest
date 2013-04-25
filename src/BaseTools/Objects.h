@@ -11,6 +11,9 @@
 #include "ofxSOInteractiveObject.h"
 #include "ofxTrueTypeFontUC.h"
 #include "MyGlobal.h"
+
+#define DERAY 100
+
 /*
  folderPass の中身は
  normal.png
@@ -28,7 +31,8 @@ public:
                 string const& _name,
                 float const& X, float const& Y,
                 float const& W, float const& H,
-                string const& folderPass);
+                string const& folderPass,
+                bool defaultExistance);
     //仮想関数の実体
     void subUpdate();
     void subDraw();
@@ -43,26 +47,13 @@ public:
         return ans;
     }
     //
-    void setTarget(ofPoint const& touchPoint);
-    bool getOpening()const{
-        return opening;
-    }
-    void print(){
-        cout << "BoundingBox::print()\nnum : " << num <<
-        "\nname : " << name <<
-        "\nobjType : " << getObjTypeString(objType) <<
-        "\ntargetNo : " << targetNo << endl;
-        for (int i = 0; i < texts.size(); i++) {
-            cout << texts[i] << endl;
-        }
-        cout << "openning : " << soToString(opening) <<
-        "\n//BoundingBox::print()" <<endl;
-    }
+    void print();
 private:
-    unsigned int num, targetNo;
+    unsigned long long stopWatch;
+    unsigned int choiceNum, choiceTargetNo;
     vector <string> texts;
-    bool exopening;
     bool opening;
+    bool bDefaultExist;
     float normalHeight;
     ofImage normalImg;
     ofImage activeImg;
@@ -74,6 +65,10 @@ private:
     void tapped(ofPoint const& touchPos);
     void open();
     void close();
+    
+    void setChoiceTarget(ofPoint const& touchPoint);
+    
+    StopWatch derayTimer;
     
 int counter;
 };

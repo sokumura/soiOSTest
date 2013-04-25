@@ -38,6 +38,42 @@ enum ObjectType {
 string getObjTypeString(unsigned int const& typeNo);
 string getActionTypeString(unsigned int const& typeNo);
 
+class StopWatch {
+public:
+    StopWatch(){
+        name = "NoName Watch";
+    }
+    StopWatch(string _name){
+        name = _name;
+    }
+    inline void on(){
+        startTime = ofGetElapsedTimeMillis();
+    }
+    inline void off(){
+        startTime = 0;
+    }
+    unsigned long long getTime(bool off = false) {
+        if (startTime == 0) {
+            cout << "StopWatch/ " << name << " has not on!!!" << endl;
+            return 0;
+        }
+        unsigned long long ans;
+        ans = ofGetElapsedTimeMillis() - startTime;
+        if (off) {
+            startTime = 0;
+        }
+        return ans;
+    }
+    inline bool isMoving() const {
+        if (startTime != 0) {
+            return true;
+        } else return false;
+    }
+private:
+    string name;
+    unsigned long long startTime;
+};
+
 class ofxSOInteractiveObject : public ofRectangle {
     /*
      ボタンとか、インタラクティブに反応しうるオブジェクト.
